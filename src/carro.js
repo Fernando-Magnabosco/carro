@@ -11,38 +11,46 @@ var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const pneuMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-const corpoMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-const comandoMaterial = new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true, color: 0xffffff });
-const farolMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+const geometries = {
+    pneu: new THREE.BoxGeometry(1, 1, 1, 8),
+    corpo: new THREE.BoxGeometry(3, 4, 1),
+    farol: new THREE.CylinderGeometry(0.4, 0.4, 0.2, 8),
+};
 
-const pneuGeometry = new THREE.BoxGeometry(1, 1, 1);
-const corpoGeometry = new THREE.BoxGeometry(3, 4, 1);
-const farolGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+const materials = {
+    pneu: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    corpo: new THREE.MeshBasicMaterial({ color: 0xff0000 }),
+    comando: new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
+    farol: new THREE.MeshBasicMaterial({ color: 0xffff00 }),
+};
+
 
 const carro = new THREE.Group();
 const pneusFrontais = new THREE.Group();
 const pneus = new THREE.Group();
 
 for (let i = 0; i < 4; i++) {
-    const pneu = new THREE.Mesh(pneuGeometry, pneuMaterial);
-    pneu.position.x = i % 2 == 0 ? -1 : 1;
-    pneu.position.y = i < 2 ? -1 : 1;
+    const pneu = new THREE.Mesh(geometries.pneu, materials.pneu);
+
+    pneu.position.set(
+        i % 2 == 0 ? -1 : 1,
+        i < 2 ? -1 : 1,
+        0);
 
     if (i < 2) pneusFrontais.add(pneu);
     else pneus.add(pneu);
 }
 
-const corpo = new THREE.Mesh(corpoGeometry, corpoMaterial)
-const farol0 = new THREE.Mesh(farolGeometry, farolMaterial)
-const farol1 = new THREE.Mesh(farolGeometry, farolMaterial)
+const corpo = new THREE.Mesh(geometries.corpo, materials.corpo);
 
-farol0.position.x = -1
-farol0.position.y = -2
-farol1.position.y = -2
-farol1.position.x = 1
-farol0.position.z = 1
-farol1.position.z = 1
+const farol0 = new THREE.Mesh(geometries.farol, materials.farol)
+const farol1 = new THREE.Mesh(geometries.farol, materials.farol)
+const light1 = new THREE.PointLight(0xffffff, 1, 100);
+const light2 = new THREE.PointLight(0xffffff, 1, 100);
+
+farol0.position.set(-1, -2, 1);
+farol1.position.set(1, -2, 1);
+
 corpo.position.z = 1
 
 const resto = new THREE.Group();
@@ -55,10 +63,10 @@ resto.add(corpo);
 carro.add(resto);
 
 
-const seguidor = new THREE.Mesh(pneuGeometry, comandoMaterial);
-const guia = new THREE.Mesh(pneuGeometry, comandoMaterial);
+const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
+const guia = new THREE.Mesh(geometries.pneu, materials.comando);
 
-const seguidorb = new THREE.Mesh(pneuGeometry, comandoMaterial);
+const seguidorb = new THREE.Mesh(geometries.pneu, materials.comando);
 
 
 const seguidorP = new THREE.Vector3();
@@ -68,7 +76,7 @@ const guiaP = new THREE.Vector3();
 var direcao = new THREE.Vector3();
 
 const comando = new THREE.Group();
-const comandob = new THREE.Group();
+
 
 pneus.add(seguidor);
 pneus.add(seguidorb);
@@ -131,7 +139,12 @@ var animate = function () {
     }
     if (abs(carSpeed) < 0.05) carSpeed = 0;
 
-
+    for (const pneu of pneusFrontais.children) {
+        pneu.rotation.x += carSpeed;
+    }
+    for (const pneu of pneus.children) {
+        pneu.rotation.x += carSpeed;
+    }
     // console.log(`aceleration ${aceleration}, speed ${carSpeed}`)
 
 
