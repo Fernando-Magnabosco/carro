@@ -56,10 +56,18 @@ for (let i = 0; i < 4; i++) {
 
 const corpo = new THREE.Mesh(geometries.corpo, materials.corpo);
 
+const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
+const guia = new THREE.Mesh(geometries.pneu, materials.comando);
+const seguidorP = new THREE.Vector3();
+const guiaP = new THREE.Vector3();
+
+const lightGuia = new THREE.Mesh(geometries.pneu, materials.comando);
+
+
 const farois = new THREE.Group();
 for (let i = 0; i < 2; i++) {
     const farol = new THREE.Mesh(geometries.farol, materials.farol);
-    const light = new THREE.SpotLight(0xffff00, 10, 200, 0.22, 1, 1, 0.7);
+    const light = new THREE.SpotLight(0xffff00, 7, 25, 0.20, 1, 0.5);
     light.castShadow = true;
     farol.position.set(
         i % 2 == 0 ? -1 : 1,
@@ -67,9 +75,10 @@ for (let i = 0; i < 2; i++) {
         1);
     light.position.set(
         i % 2 == 0 ? -1 : 1,
-        -2,
+        1,
         1);
 
+    light.target = lightGuia;
 
     farois.add(light);
     farois.add(farol);
@@ -81,18 +90,14 @@ corpo.position.z = 1
 
 const resto = new THREE.Group();
 
-resto.add(farois);
 
+resto.add(farois);
 resto.add(pneus);
 resto.add(corpo);
-
 carro.add(resto);
 
 
-const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
-const guia = new THREE.Mesh(geometries.pneu, materials.comando);
-const seguidorP = new THREE.Vector3();
-const guiaP = new THREE.Vector3();
+
 
 
 var direcao = new THREE.Vector3();
@@ -101,7 +106,9 @@ const comando = new THREE.Group();
 
 
 pneus.add(seguidor);
-comando.add(guia)
+pneus.add(lightGuia);
+comando.add(guia);
+
 
 
 comando.add(pneusFrontais)
@@ -111,13 +118,15 @@ carro.add(comando)
 seguidor.position.y = -1
 
 guia.position.y = -3
+lightGuia.position.y = -20;
+
 
 //reflexive sphere
 const sphere = new THREE.Mesh(
     new THREE.SphereGeometry(5, 5, 64),
     new THREE.MeshStandardMaterial({ color: 0x444445 })
 )
-sphere.position.set(1, 1, 1);
+sphere.position.set(0, 0, 0);
 
 scene.add(sphere);
 
@@ -213,7 +222,7 @@ const keyCodeMap = {
         direcao.normalize()
 
         aceleration += speed;
-        if (aceleration < .2) aceleration = .2;
+
         const diff = resto.rotation.z - comando.rotation.z
 
         if (map[67]) keyCodeMap[67]();
@@ -240,7 +249,7 @@ const keyCodeMap = {
         direcao.normalize()
 
         aceleration -= speed;
-        if (aceleration > -.2) aceleration = -.2;
+
 
         const diff = resto.rotation.z - comando.rotation.z
 
