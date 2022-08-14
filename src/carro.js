@@ -1,13 +1,26 @@
 import * as THREE from 'three';
 
+const PI = 3.141592653589793;
 function abs(x) {
     return x < 0 ? -x : x;
 }
 
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const scene = new THREE.Scene();
 
-var renderer = new THREE.WebGLRenderer();
+const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9);
+scene.add(hemisphereLight);
+
+
+
+const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100, 1, 1),
+    new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('../textures/floor.jpg') })
+);
+scene.add(floor);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -43,20 +56,33 @@ for (let i = 0; i < 4; i++) {
 
 const corpo = new THREE.Mesh(geometries.corpo, materials.corpo);
 
-const farol0 = new THREE.Mesh(geometries.farol, materials.farol)
-const farol1 = new THREE.Mesh(geometries.farol, materials.farol)
-const light1 = new THREE.PointLight(0xffffff, 1, 100);
-const light2 = new THREE.PointLight(0xffffff, 1, 100);
+const farois = new THREE.Group();
+for (let i = 0; i < 2; i++) {
+    const farol = new THREE.Mesh(geometries.farol, materials.farol);
+    const light = new THREE.SpotLight(0xffff00, 10, 200, 0.22, 1, 1, 0.7);
+    light.castShadow = true;
+    farol.position.set(
+        i % 2 == 0 ? -1 : 1,
+        -2,
+        1);
+    light.position.set(
+        i % 2 == 0 ? -1 : 1,
+        -2,
+        1);
 
-farol0.position.set(-1, -2, 1);
-farol1.position.set(1, -2, 1);
+
+    farois.add(light);
+    farois.add(farol);
+}
+
+// scene.add(light);
 
 corpo.position.z = 1
 
 const resto = new THREE.Group();
 
-resto.add(farol0);
-resto.add(farol1);
+resto.add(farois);
+
 resto.add(pneus);
 resto.add(corpo);
 
@@ -65,10 +91,6 @@ carro.add(resto);
 
 const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
 const guia = new THREE.Mesh(geometries.pneu, materials.comando);
-
-const seguidorb = new THREE.Mesh(geometries.pneu, materials.comando);
-
-
 const seguidorP = new THREE.Vector3();
 const guiaP = new THREE.Vector3();
 
@@ -79,10 +101,10 @@ const comando = new THREE.Group();
 
 
 pneus.add(seguidor);
-pneus.add(seguidorb);
+comando.add(guia)
+
 
 comando.add(pneusFrontais)
-comando.add(guia)
 
 
 carro.add(comando)
@@ -90,10 +112,14 @@ seguidor.position.y = -1
 
 guia.position.y = -3
 
+//reflexive sphere
+const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(5, 5, 64),
+    new THREE.MeshStandardMaterial({ color: 0x444445 })
+)
+sphere.position.set(1, 1, 1);
 
-
-
-
+scene.add(sphere);
 
 scene.add(carro)
 
@@ -112,7 +138,9 @@ var animate = function () {
         carro.position.x + direcao.x * carSpeed,
         carro.position.y + direcao.y * carSpeed,
         carro.position.z + direcao.z * carSpeed
-    )
+    );
+
+
 
     if (aceleration > 0) {
         aceleration -= speed / 2;
@@ -185,7 +213,7 @@ const keyCodeMap = {
         direcao.normalize()
 
         aceleration += speed;
-
+        if (aceleration < .2) aceleration = .2;
         const diff = resto.rotation.z - comando.rotation.z
 
         if (map[67]) keyCodeMap[67]();
@@ -212,6 +240,8 @@ const keyCodeMap = {
         direcao.normalize()
 
         aceleration -= speed;
+        if (aceleration > -.2) aceleration = -.2;
+
         const diff = resto.rotation.z - comando.rotation.z
 
         if (map[67]) keyCodeMap[67]();
