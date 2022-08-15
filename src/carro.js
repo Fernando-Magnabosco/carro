@@ -36,6 +36,7 @@ const geometries = {
     corpo: new THREE.BoxGeometry(3, 4, 1),
     corpo2: new THREE.BoxGeometry(2.75, 2, 1.5),
     farol: new THREE.CylinderGeometry(0.4, 0.4, 0.2, 8),
+    rastro: new THREE.BoxGeometry(2, 3, 1),
 };
 
 
@@ -46,6 +47,8 @@ const materials = {
     corpo2: new THREE.MeshLambertMaterial({ color: parseInt("0x" + generateRandomHexa(), 16) }),
     comando: new THREE.MeshLambertMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
     farol: new THREE.MeshLambertMaterial({ color: 0xffff00 }),
+    rastro: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, opacity: .4 }),
+    // create trail material
 };
 
 let atualLampada = 0;
@@ -65,6 +68,9 @@ const lampadas = [
         angle: 0.1,
         penumbra: 0,
         decay: 0
+    },
+    {
+
     }
 
 ];
@@ -194,7 +200,7 @@ camera.position.z = 25
 
 var aceleration = 0;
 var carSpeed = 0;
-const maxSpeed = .6;
+const maxSpeed = .8;
 var animate = function () {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -221,6 +227,7 @@ var animate = function () {
             carro.position.y + direcao.y * carSpeed,
             carro.position.z + direcao.z * carSpeed
         );
+        console.log(carro.position);
     }
     else {
         carSpeed = 0;
@@ -304,8 +311,31 @@ const keyCodeMap = {
 
         const diff = resto.rotation.z - comando.rotation.z
 
-        if (map[67]) keyCodeMap[67]();
-        else if (map[90]) keyCodeMap[90]();
+        let rastro = 0;
+        if (map[67]) { keyCodeMap[67](); rastro = 1; }
+        else if (map[90]) { keyCodeMap[90](); rastro = 1; }
+
+        if (rastro == 1) {
+            createRastro();
+            const blablabla =
+                new THREE.Mesh(
+                    geometries.rastro,
+                    materials.rastro
+                );
+            blablabla.position.set(
+                carro.position.x,
+                carro.position.y,
+                carro.position.z
+            );
+
+            blablabla.rotation.x = PI / 2;
+
+            setTimeout(() => {
+                scene.remove(blablabla);
+            }, 5000 * Math.random() + 1000);
+            scene.add(blablabla);
+
+        }
 
 
         if (diff > .01 || diff < -.01)
@@ -391,4 +421,20 @@ function generateRandomHexa() {
         result += chars[Math.floor(Math.random() * chars.length)];
     return result;
 
+}
+
+function createRastro() {
+    const rastro = new THREE.Mesh(
+        geometries.rastro,
+        materials.rastro
+    );
+    rastro.position.set(
+        carro.position.x,
+        carro.position.y,
+        carro.position.z
+    );
+    setTimeout(() => {
+        scene.remove(rastro);
+    }, 5000 * Math.random() + 1000);
+    scene.add(rastro);
 }
