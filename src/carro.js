@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 
+
+
 const velocimeter = document.getElementById('velocimeter');
 // console.log(velocimeter);
 const PI = 3.141592653589793;
+let blocked = false;
 function abs(x) {
     return x < 0 ? -x : x;
 }
@@ -20,7 +23,7 @@ scene.add(directionalLight);
 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(100, 100, 1, 1),
-    new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('../textures/floor.jpg') })
+    new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('../textures/floor.jpg'), side: THREE.DoubleSide })
 );
 scene.add(floor);
 
@@ -36,7 +39,9 @@ const geometries = {
     corpo: new THREE.BoxGeometry(3, 4, 1),
     corpo2: new THREE.BoxGeometry(2.75, 2, 1.5),
     farol: new THREE.CylinderGeometry(0.4, 0.4, 0.2, 8),
+    farolTraseiro: new THREE.BoxGeometry(.9, .9, .75),
     rastro: new THREE.BoxGeometry(2, 3, 1),
+
 };
 
 
@@ -47,8 +52,9 @@ const materials = {
     corpo2: new THREE.MeshLambertMaterial({ color: parseInt("0x" + generateRandomHexa(), 16) }),
     comando: new THREE.MeshLambertMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
     farol: new THREE.MeshLambertMaterial({ color: 0xffff00 }),
+    farolTraseiro: new THREE.MeshLambertMaterial({ color: 0xff0000 }),
     rastro: new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, opacity: .4 }),
-    // create trail material
+
 };
 
 let atualLampada = 0;
@@ -120,10 +126,29 @@ const lightGuia = new THREE.Mesh(geometries.pneu, materials.comando);
 
 
 const farois = new THREE.Group();
+const lights = new THREE.Group();
+
+const blinkers = new THREE.Group();
+const isBlinkerOn = [false, false];
 for (let i = 0; i < 2; i++) {
     const farol = new THREE.Mesh(geometries.farol, materials.farol);
+    const farolTraseiro = new THREE.Mesh(geometries.farolTraseiro, materials.farolTraseiro);
+
     const { color, intensity, distance, angle, penumbra, decay } = lampadas[0];
     const light = new THREE.SpotLight(color, intensity, distance, angle, penumbra, decay);
+
+    const blinker = new THREE.PointLight(0xFF0000, 0.6, 10);
+    blinker.visible = false;
+
+    farolTraseiro.position.set(
+        i % 2 == 0 ? -1 : 1,
+        1.75,
+        1);
+
+    blinker.position.set(
+        i % 2 == 0 ? -1 : 1,
+        1.75,
+        1);
 
     farol.position.set(
         i % 2 == 0 ? -1 : 1,
@@ -136,12 +161,15 @@ for (let i = 0; i < 2; i++) {
 
     light.target = lightGuia;
 
-    farois.add(light);
+    blinkers.add(blinker);
+    lights.add(light);
+    farois.add(farolTraseiro);
     farois.add(farol);
 
 }
+farois.add(blinkers);
+farois.add(lights);
 
-// scene.add(light);
 
 corpo.position.z = 1
 corpo2.position.z = 2;
@@ -201,6 +229,8 @@ camera.position.z = 25
 var aceleration = 0;
 var carSpeed = 0;
 const maxSpeed = .8;
+const maxAceleration = .1;
+
 var animate = function () {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -227,12 +257,17 @@ var animate = function () {
             carro.position.y + direcao.y * carSpeed,
             carro.position.z + direcao.z * carSpeed
         );
-        console.log(carro.position);
+
     }
     else {
-        carSpeed = 0;
-        aceleration = 0;
-        console.log("hit the wall")
+
+        direcao.multiplyScalar(-1);
+        blocked = true;
+        setTimeout(() => {
+            blocked = false;
+        }, 400);
+
+        // console.log("hit the wall")
     }
 
     camera.position.set(
@@ -247,25 +282,26 @@ var animate = function () {
 
     if (aceleration > 0) {
         aceleration -= speed / 4;
-        if (aceleration > 1) aceleration = 1;
+        if (aceleration > maxAceleration) aceleration = maxAceleration;
     } else if (aceleration < 0) {
         aceleration += speed / 4;
-        if (aceleration < -1) aceleration = -1;
+        if (aceleration < -maxAceleration) aceleration = -maxAceleration;
     }
 
     if (abs(aceleration) < .02) aceleration = 0;
 
 
+    velocimeter.innerHTML = `speed: ${abs(carSpeed * 100).toFixed(2)} km/h `
 
 
-    velocimeter.innerText = `${abs(carSpeed * 100).toFixed(2)} km/h`;
+
     for (const pneu of pneusFrontais.children) {
         pneu.rotation.x += carSpeed;
     }
     for (const pneu of pneus.children) {
         pneu.rotation.x += carSpeed;
     }
-    console.log(`aceleration ${aceleration}, speed ${carSpeed}`)
+    // console.log(`aceleration ${aceleration}, speed ${carSpeed}`)
 
 
 };
@@ -274,12 +310,18 @@ const map = new Map();
 
 
 
+
 const speed = .15;
 const keyCodeMap = {
-    37: () => camera.position.x -= speed,
-    38: () => camera.position.y += speed,
-    39: () => camera.position.x += speed,
-    40: () => camera.position.y -= speed,
+    37: () => {
+        isBlinkerOn[1] ? turnOffBlinker(1) : turnOnBlinker(1);
+
+    },
+    38: () => changeLamp(true),
+    39: () => {
+        isBlinkerOn[0] ? turnOffBlinker(0) : turnOnBlinker(0);
+    },
+    40: () => changeLamp(),
     65: () => carro.rotation.z += speed,
     68: () => carro.rotation.z -= speed,
     90: () => {
@@ -307,36 +349,16 @@ const keyCodeMap = {
             guiaP.z - seguidorP.z)
         direcao.normalize()
 
-        aceleration += speed;
+        aceleration += speed / 2;
 
         const diff = resto.rotation.z - comando.rotation.z
 
-        let rastro = 0;
-        if (map[67]) { keyCodeMap[67](); rastro = 1; }
-        else if (map[90]) { keyCodeMap[90](); rastro = 1; }
+        let rastro = false
+        if (map[67]) { keyCodeMap[67](); rastro = true; }
+        else if (map[90]) { keyCodeMap[90](); rastro = true; }
 
-        if (rastro == 1) {
+        if (rastro)
             createRastro();
-            const blablabla =
-                new THREE.Mesh(
-                    geometries.rastro,
-                    materials.rastro
-                );
-            blablabla.position.set(
-                carro.position.x,
-                carro.position.y,
-                carro.position.z
-            );
-
-            blablabla.rotation.x = PI / 2;
-
-            setTimeout(() => {
-                scene.remove(blablabla);
-            }, 5000 * Math.random() + 1000);
-            scene.add(blablabla);
-
-        }
-
 
         if (diff > .01 || diff < -.01)
             if (diff > 0)
@@ -362,8 +384,13 @@ const keyCodeMap = {
 
         const diff = resto.rotation.z - comando.rotation.z
 
-        if (map[67]) keyCodeMap[67]();
-        else if (map[90]) keyCodeMap[90]();
+        let rastro = false
+        if (map[67]) { keyCodeMap[67](); rastro = true; }
+        else if (map[90]) { keyCodeMap[90](); rastro = true; }
+        else if (carSpeed > .6) rastro = true;
+
+        if (rastro)
+            createRastro();
 
         if (diff > .01 || diff < -.01)
             if (diff > 0)
@@ -371,22 +398,7 @@ const keyCodeMap = {
             else
                 resto.rotation.z += speed
     },
-    96: () => {
 
-        atualLampada = (atualLampada + 1) % lampadas.length;
-        const { color, intensity, distance, angle, penumbra, decay } = lampadas[atualLampada];
-        farois.children.forEach(child => {
-            if (child.isSpotLight) {
-                child.color.set(color);
-                child.intensity = intensity;
-                child.distance = distance;
-                child.angle = angle;
-                child.penumbra = penumbra;
-                child.decay = decay;
-            }
-        })
-
-    }
 }
 
 
@@ -394,10 +406,12 @@ const keyCodeMap = {
 
 function onKeyDown(event) {
 
+    if (blocked) return;
     var keyCode = event.which;
+
     map[keyCode] = true;
     keyCodeMap[keyCode] && keyCodeMap[keyCode]();
-    // console.log(keyCode);
+
 
 }
 
@@ -424,6 +438,7 @@ function generateRandomHexa() {
 }
 
 function createRastro() {
+
     const rastro = new THREE.Mesh(
         geometries.rastro,
         materials.rastro
@@ -437,4 +452,43 @@ function createRastro() {
         scene.remove(rastro);
     }, 5000 * Math.random() + 1000);
     scene.add(rastro);
+}
+
+function changeLamp(toSubtract = false) {
+
+    if (toSubtract) atualLampada--;
+    else atualLampada++;
+    if (atualLampada > lampadas.length - 1) atualLampada = 0;
+    if (atualLampada < 0) atualLampada = lampadas.length - 1;
+    const { color, intensity, distance, angle, penumbra, decay } = lampadas[atualLampada];
+    lights.children.forEach(child => {
+
+        child.color.set(color);
+        child.intensity = intensity;
+        child.distance = distance;
+        child.angle = angle;
+        child.penumbra = penumbra;
+        child.decay = decay;
+
+    })
+}
+
+function turnOnBlinker(blinker) {
+
+    blinkers.children[blinker].visible = true;
+    isBlinkerOn[blinker] = true;
+    const interval = setInterval(() => {
+        blinkers.children[blinker].visible = !blinkers.children[blinker].visible;
+        if (!isBlinkerOn[blinker]) {
+            clearInterval(interval);
+            blinkers.children[blinker].visible = false;
+        }
+    }, 350);
+    turnOffBlinker((blinker + 1) % 2);
+}
+
+function turnOffBlinker(blinker) {
+
+    isBlinkerOn[blinker] = false;
+
 }
