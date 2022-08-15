@@ -10,6 +10,10 @@ const scene = new THREE.Scene();
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+directionalLight.position.set(200, 500, 300);
+scene.add(directionalLight);
+
 
 
 const floor = new THREE.Mesh(
@@ -25,16 +29,21 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const geometries = {
-    pneu: new THREE.BoxGeometry(1, 1, 1, 8),
+    pneu: new THREE.CylinderGeometry(.8, .8, .7, 8, 8, false),
+    roda: new THREE.CylinderGeometry(.4, .4, 1, 8, 8, false),
     corpo: new THREE.BoxGeometry(3, 4, 1),
+    corpo2: new THREE.BoxGeometry(2.75, 2, 1.5),
     farol: new THREE.CylinderGeometry(0.4, 0.4, 0.2, 8),
 };
 
+
 const materials = {
-    pneu: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-    corpo: new THREE.MeshBasicMaterial({ color: 0xff0000 }),
-    comando: new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
-    farol: new THREE.MeshBasicMaterial({ color: 0xffff00 }),
+    pneu: new THREE.MeshLambertMaterial({ color: 0x000000 }),
+    roda: new THREE.MeshLambertMaterial({ color: 0x888888 }),
+    corpo: new THREE.MeshLambertMaterial({ color: 0xDE5959 }),
+    corpo2: new THREE.MeshLambertMaterial({ color: 0xFA7B64 }),
+    comando: new THREE.MeshLambertMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
+    farol: new THREE.MeshLambertMaterial({ color: 0xffff00 }),
 };
 
 
@@ -44,17 +53,34 @@ const pneus = new THREE.Group();
 
 for (let i = 0; i < 4; i++) {
     const pneu = new THREE.Mesh(geometries.pneu, materials.pneu);
+    const roda = new THREE.Mesh(geometries.roda, materials.roda);
 
     pneu.position.set(
         i % 2 == 0 ? -1 : 1,
         i < 2 ? -1 : 1,
         0);
 
-    if (i < 2) pneusFrontais.add(pneu);
-    else pneus.add(pneu);
+    roda.position.set(
+        pneu.position.x,
+        pneu.position.y,
+        0);
+
+    pneu.rotation.z = PI / 2;
+    roda.rotation.z = PI / 2;
+
+
+    if (i < 2) {
+        pneusFrontais.add(pneu);
+        pneusFrontais.add(roda);
+    }
+    else {
+        pneus.add(pneu);
+        pneus.add(roda);
+    }
 }
 
 const corpo = new THREE.Mesh(geometries.corpo, materials.corpo);
+const corpo2 = new THREE.Mesh(geometries.corpo2, materials.corpo2);
 
 const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
 const guia = new THREE.Mesh(geometries.pneu, materials.comando);
@@ -87,6 +113,7 @@ for (let i = 0; i < 2; i++) {
 // scene.add(light);
 
 corpo.position.z = 1
+corpo2.position.z = 2;
 
 const resto = new THREE.Group();
 
@@ -94,6 +121,7 @@ const resto = new THREE.Group();
 resto.add(farois);
 resto.add(pneus);
 resto.add(corpo);
+resto.add(corpo2);
 carro.add(resto);
 
 
