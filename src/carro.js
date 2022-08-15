@@ -40,11 +40,32 @@ const geometries = {
 const materials = {
     pneu: new THREE.MeshLambertMaterial({ color: 0x000000 }),
     roda: new THREE.MeshLambertMaterial({ color: 0x888888 }),
-    corpo: new THREE.MeshLambertMaterial({ color: 0xDE5959 }),
-    corpo2: new THREE.MeshLambertMaterial({ color: 0xFA7B64 }),
+    corpo: new THREE.MeshLambertMaterial({ color: parseInt("0x" + generateRandomHexa(), 16) }),
+    corpo2: new THREE.MeshLambertMaterial({ color: parseInt("0x" + generateRandomHexa(), 16) }),
     comando: new THREE.MeshLambertMaterial({ opacity: 0.0, transparent: true, color: 0xffffff }),
     farol: new THREE.MeshLambertMaterial({ color: 0xffff00 }),
 };
+
+let atualLampada = 0;
+const lampadas = [
+    {
+        color: 0xffff00,
+        intensity: 7,
+        distance: 25,
+        angle: 0.20,
+        penumbra: 1,
+        decay: .5
+    },
+    {
+        color: 0x0022ff,
+        intensity: 20,
+        distance: 50,
+        angle: 0.1,
+        penumbra: 0,
+        decay: 0
+    }
+
+];
 
 
 const carro = new THREE.Group();
@@ -93,8 +114,9 @@ const lightGuia = new THREE.Mesh(geometries.pneu, materials.comando);
 const farois = new THREE.Group();
 for (let i = 0; i < 2; i++) {
     const farol = new THREE.Mesh(geometries.farol, materials.farol);
-    const light = new THREE.SpotLight(0xffff00, 7, 25, 0.20, 1, 0.5);
-    light.castShadow = true;
+    const { color, intensity, distance, angle, penumbra, decay } = lampadas[0];
+    const light = new THREE.SpotLight(color, intensity, distance, angle, penumbra, decay);
+
     farol.position.set(
         i % 2 == 0 ? -1 : 1,
         -2,
@@ -108,6 +130,7 @@ for (let i = 0; i < 2; i++) {
 
     farois.add(light);
     farois.add(farol);
+
 }
 
 // scene.add(light);
@@ -154,7 +177,7 @@ const sphere = new THREE.Mesh(
     new THREE.SphereGeometry(5, 5, 64),
     new THREE.MeshStandardMaterial({ color: 0x444445 })
 )
-sphere.position.set(0, 0, 0);
+sphere.position.set(10, 10, 0);
 
 scene.add(sphere);
 
@@ -293,6 +316,22 @@ const keyCodeMap = {
                 resto.rotation.z -= speed
             else
                 resto.rotation.z += speed
+    },
+    96: () => {
+
+        atualLampada = (atualLampada + 1) % lampadas.length;
+        const { color, intensity, distance, angle, penumbra, decay } = lampadas[atualLampada];
+        farois.children.forEach(child => {
+            if (child.isSpotLight) {
+                child.color.set(color);
+                child.intensity = intensity;
+                child.distance = distance;
+                child.angle = angle;
+                child.penumbra = penumbra;
+                child.decay = decay;
+            }
+        })
+
     }
 }
 
@@ -318,3 +357,14 @@ document.addEventListener("keydown", onKeyDown, false);
 document.addEventListener("keyup", onKeyRelease, false);
 
 animate();
+
+
+function generateRandomHexa() {
+
+    var chars = "ABCDEF0123456789";
+    var result = "";
+    for (var i = 0; i < 6; i++)
+        result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
+
+}
