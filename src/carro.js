@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+const velocimeter = document.getElementById('velocimeter');
+// console.log(velocimeter);
 const PI = 3.141592653589793;
 function abs(x) {
     return x < 0 ? -x : x;
@@ -79,12 +81,12 @@ for (let i = 0; i < 4; i++) {
     pneu.position.set(
         i % 2 == 0 ? -1 : 1,
         i < 2 ? -1 : 1,
-        0);
+        .3);
 
     roda.position.set(
         pneu.position.x,
         pneu.position.y,
-        0);
+        .3);
 
     pneu.rotation.z = PI / 2;
     roda.rotation.z = PI / 2;
@@ -184,60 +186,79 @@ scene.add(sphere);
 scene.add(carro)
 
 
-camera.position.z = 30
+camera.position.z = 25
+
+// put the camera right behind the car
+
 
 
 var aceleration = 0;
 var carSpeed = 0;
-
+const maxSpeed = .6;
 var animate = function () {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
-
-    carro.position.set(
-        carro.position.x + direcao.x * carSpeed,
-        carro.position.y + direcao.y * carSpeed,
-        carro.position.z + direcao.z * carSpeed
-    );
-
-    camera.position.set(
-        carro.position.x,
-        carro.position.y,
-        camera.position.z);
-
-
-    if (aceleration > 0) {
-        aceleration -= speed / 2;
-        if (aceleration > 1) aceleration = 1;
-    } else if (aceleration < 0) {
-        aceleration += speed / 2;
-        if (aceleration < -1) aceleration = -1;
-    }
-
-    if (abs(aceleration) < 0.05) aceleration = 0;
-
     carSpeed += aceleration;
 
     if (carSpeed > 0) {
         carSpeed -= speed / 8;
-        if (carSpeed > .5)
-            carSpeed = .5;
+        if (carSpeed > maxSpeed)
+            carSpeed = maxSpeed;
     }
 
     else if (carSpeed < 0) {
         carSpeed += speed / 8;
-        if (carSpeed < -.5)
-            carSpeed = -.5;
+        if (carSpeed < -maxSpeed)
+            carSpeed = -maxSpeed;
     }
-    if (abs(carSpeed) < 0.05) carSpeed = 0;
+    if (abs(carSpeed) < 0.01) carSpeed = 0;
+    // console.log(carSpeed);
 
+    if (abs(carro.position.x + direcao.x * carSpeed) < 48 && abs(carro.position.y + direcao.y * carSpeed) < 48) {
+
+        carro.position.set(
+            carro.position.x + direcao.x * carSpeed,
+            carro.position.y + direcao.y * carSpeed,
+            carro.position.z + direcao.z * carSpeed
+        );
+    }
+    else {
+        carSpeed = 0;
+        aceleration = 0;
+        console.log("hit the wall")
+    }
+
+    camera.position.set(
+        carro.position.x,
+        carro.position.y - 15,
+        camera.position.z
+    )
+
+    camera.lookAt(carro.position);
+
+
+
+    if (aceleration > 0) {
+        aceleration -= speed / 4;
+        if (aceleration > 1) aceleration = 1;
+    } else if (aceleration < 0) {
+        aceleration += speed / 4;
+        if (aceleration < -1) aceleration = -1;
+    }
+
+    if (abs(aceleration) < .02) aceleration = 0;
+
+
+
+
+    velocimeter.innerText = `${abs(carSpeed * 100).toFixed(2)} km/h`;
     for (const pneu of pneusFrontais.children) {
         pneu.rotation.x += carSpeed;
     }
     for (const pneu of pneus.children) {
         pneu.rotation.x += carSpeed;
     }
-    // console.log(`aceleration ${aceleration}, speed ${carSpeed}`)
+    console.log(`aceleration ${aceleration}, speed ${carSpeed}`)
 
 
 };
@@ -248,10 +269,10 @@ const map = new Map();
 
 const speed = .15;
 const keyCodeMap = {
-    37: () => carro.rotation.x -= speed,
-    38: () => carro.rotation.y += speed,
-    39: () => carro.rotation.x += speed,
-    40: () => carro.rotation.y -= speed,
+    37: () => camera.position.x -= speed,
+    38: () => camera.position.y += speed,
+    39: () => camera.position.x += speed,
+    40: () => camera.position.y -= speed,
     65: () => carro.rotation.z += speed,
     68: () => carro.rotation.z -= speed,
     90: () => {
@@ -260,10 +281,13 @@ const keyCodeMap = {
         if (comando.rotation.z - resto.rotation.z <= -.3) return;
         comando.rotation.z -= speed * 2
 
+
     },
     67: () => {
         if (comando.rotation.z - resto.rotation.z >= .3) return;
         comando.rotation.z += speed * 2
+
+
 
     },
     87: () => {
@@ -303,7 +327,7 @@ const keyCodeMap = {
 
         direcao.normalize()
 
-        aceleration -= speed;
+        aceleration -= speed / 2;
 
 
         const diff = resto.rotation.z - comando.rotation.z
@@ -343,7 +367,7 @@ function onKeyDown(event) {
     var keyCode = event.which;
     map[keyCode] = true;
     keyCodeMap[keyCode] && keyCodeMap[keyCode]();
-    console.log(keyCode);
+    // console.log(keyCode);
 
 }
 
