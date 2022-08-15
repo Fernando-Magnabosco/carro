@@ -7,8 +7,8 @@ function abs(x) {
 
 const scene = new THREE.Scene();
 
-const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, .9);
-scene.add(hemisphereLight);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
 
 
 
@@ -149,6 +149,10 @@ var animate = function () {
         carro.position.z + direcao.z * carSpeed
     );
 
+    camera.position.set(
+        carro.position.x,
+        carro.position.y,
+        camera.position.z);
 
 
     if (aceleration > 0) {
@@ -272,7 +276,7 @@ function onKeyDown(event) {
     var keyCode = event.which;
     map[keyCode] = true;
     keyCodeMap[keyCode] && keyCodeMap[keyCode]();
-
+    console.log(keyCode);
 
 }
 
