@@ -23,7 +23,7 @@ scene.add(directionalLight);
 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(100, 100, 1, 1),
-    new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('../textures/floor.jpg'), side: THREE.DoubleSide })
+    new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('../textures/ssw.jpg'), side: THREE.DoubleSide })
 );
 scene.add(floor);
 
