@@ -29,7 +29,7 @@ scene.add(floor);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -117,8 +117,11 @@ for (let i = 0; i < 4; i++) {
 const corpo = new THREE.Mesh(geometries.corpo, materials.corpo);
 const corpo2 = new THREE.Mesh(geometries.corpo2, materials.corpo2);
 
+//obejto
 const seguidor = new THREE.Mesh(geometries.pneu, materials.comando);
 const guia = new THREE.Mesh(geometries.pneu, materials.comando);
+
+//vetor
 const seguidorP = new THREE.Vector3();
 const guiaP = new THREE.Vector3();
 
@@ -313,6 +316,7 @@ const map = new Map();
 
 const speed = .15;
 const keyCodeMap = {
+    
     37: () => {
         isBlinkerOn[1] ? turnOffBlinker(1) : turnOnBlinker(1);
 
